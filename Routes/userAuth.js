@@ -6,7 +6,6 @@ import { Router } from "express";
 import sendResetEmail from "../Utils/nodeMail.js";
 import { generateToken } from "../Utils/generateToken.js";
 import { verifyToken } from "../Middleware/verifyToken.js";
-import nodemailer from 'nodemailer';
 
 
 const router = express.Router();
@@ -88,9 +87,15 @@ router.post('/forget-password', async (req, res) => {
         await user.save();
 
         // Send password reset email
-        await sendResetEmail(user, resetToken);
+        await sendResetEmail(user, resetToken, (error, result) => {
+            if (error) {
+                console.error(error);
+                res.status(500).json({ message: 'Internal Server Error' });
+            } else {
+                res.json({ message: 'Password reset email sent', ...result });
+            }
+        });
 
-        res.json({ message: 'Password reset email sent' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
@@ -118,35 +123,47 @@ router.post('/reset-password', async (req, res) => {
         user.resetTokenExpiry = Date.now() + 360000; //1hour
         await user.save();
 
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_SERVICE,
-                pass: process.env.EMAIL_PASSWORD
-            }
-        });
-        const mailOptions = {
-            from: 'konnect.trl@gmail.com',
-            to: user.email,
-            subject: 'Password Reset',
-            text: `Click the link to reset your password, it will expire in 5 min.\n\n please use the following token reset password:${sendResetEmail}\n\n. If you did not request a password reset.Please igore this email.  `
-        };
+        //     const transporter = nodemailer.createTransport({
+        //         service: 'gmail',
+        //         auth: {
+        //             user: process.env.EMAIL_SERVICE,
+        //             pass: process.env.EMAIL_PASSWORD
+        //         }
+        //     });
+        //     const mailOptions = {
+        //         from: process.env.EMAIL_SERVICE,
+        //         to: user.email,
+        //         subject: 'Password Reset',
+        //         text: `Click the link to reset your password, it will expire in 5 min.\n\n please use the following token reset password:${sendResetEmail}\n\n. If you did not request a password reset.Please igore this email.  `
+        //     };
 
-        transporter.sendMail(mailOptions, (err, info) => {
+        //     transporter.sendMail(mailOptions, (err, info) => {
 
+        //         if (err) {
+        //             res.status(404).json({ message: "Something went wrong, Try again !" })
+
+        //         }
+        //         res.status(201).json({ message: "Password reset email sent successfully" + info.response })
+        //         console.log('Password reset email sent successfully');
+        //     });
+
+
+        // } catch (error) {
+        //     console.error(error);
+        //     res.status(500).json({ message: 'Internal Server Error' });
+        // }
+        sendResetEmail(user, token, (err, response) => {
             if (err) {
-                res.status(404).json({ message: "Something went wrong, Try again !" })
-
+                return res.status(404).json({ message: "Something went wrong, Try again !" });
             }
-            res.status(201).json({ message: "Password reset email sent successfully" + info.response })
-            console.log('Password reset email sent successfully');
+            res.status(201).json(response);
         });
-
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
+
 });
 
 
