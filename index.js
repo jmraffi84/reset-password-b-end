@@ -5,9 +5,8 @@ import helmet from 'helmet'
 dotenv.config()
 import { mongoConnection } from './db.js'
 import { userRouter } from './Routes/userAuth.js'
-// import router from './Routes/userAuth.js'
 
-
+app.use(cors());
 const PORT = process.env.PORT || 3500;
 const app = express();
 app.use(helmet());
@@ -25,7 +24,7 @@ app.use(userRouter)
 app.use(express.urlencoded({ extended: false }));
 
 // To handle Cross Origin Resource Sharing - allowing sharing
-app.use(cors());
+
 
 // Listening to server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
