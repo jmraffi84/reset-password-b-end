@@ -6,9 +6,10 @@ dotenv.config()
 import { mongoConnection } from './db.js'
 import { userRouter } from './Routes/userAuth.js'
 
-app.use(cors());
 const PORT = process.env.PORT || 3500;
 const app = express();
+app.use(cors());
+
 app.use(helmet());
 
 mongoConnection()
