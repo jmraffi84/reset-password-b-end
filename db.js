@@ -7,7 +7,7 @@ export async function mongoConnection() {
     //     useUnifiedTopology: true,
     // }
     try {
-        await mongoose.connect(process.env.MONGODB_URI, params)
+        await mongoose.connect(process.env.MONGODB_URI)
         console.log("Mongo database Connected")
     } catch (error) {
         console.log(error)
