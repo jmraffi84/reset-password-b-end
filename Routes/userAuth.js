@@ -200,7 +200,8 @@ router.post('/reset-password/:token', async (req, res) => {
 
 
 router.get('/', (res, req) => {
-    res.send("App is  working")
+    return res.status(200).json({ message: "App is working" });
+
 })
 
 
