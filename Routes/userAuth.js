@@ -197,9 +197,8 @@ router.post('/reset-password/:token', async (req, res) => {
 });
 
 
-
-
-router.get('/', (res, req) => {
+router.get('/', (req, res) => {
+    console.log("Test is working");
     return res.status(200).json({ message: "App is working" });
 
 })
