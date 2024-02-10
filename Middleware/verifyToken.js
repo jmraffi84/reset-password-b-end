@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
-import User from "../Models/user.js";
+import User from "../Models/User.js";
 
 export const verifyToken = (req, res, next) => {
     const authHeader = req.headers.authorization;
+    // const token = req.headers["x-auth-token"];
+
     if (!authHeader) {
         res.status(401).json({ message: 'missing token' });
     }

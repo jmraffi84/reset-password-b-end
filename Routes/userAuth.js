@@ -1,6 +1,6 @@
 import express from "express";
 import bcrypt from "bcrypt";
-import User from "../Models/user.js";
+import User from "../Models/User.js";
 import { randomBytes } from 'crypto'
 import { Router } from "express";
 import sendResetEmail from "../Utils/nodeMail.js";
@@ -11,27 +11,50 @@ import { verifyToken } from "../Middleware/verifyToken.js";
 const router = express.Router();
 
 const randomToken = () => {
-    return randomBytes(20).toString('hex')
+    return randomBytes(4).toString('hex')
 };
 
 
+
 router.post('/signup', async (req, res) => {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (user) {
-        return res.status(400).json({ message: 'User already exists' });
+    try {
+        console.log("Enter into sigup block");
+
+        const userData = {
+            email: req.body.email,
+            password: req.body.password
+        }
+        console.log('Entered:', userData);
+        let user = await User.find({ email: userData.email, password: userData.password });
+        console.log("db user : ", { ...user });
+        if (!user) {
+            res.status(404).json({ error: ' user already exists' })
+
+        }
+        else {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(req.body.password, salt);
+            user = new User({
+                email: userData.email,
+                password: hashedPassword,
+            });
+            console.log("SAVING NEW USER:", user);
+            await user.save();
+            res.status(201).json({ message: 'User registered successfully', user });
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
     }
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    // Create and save the new user
-    const newUser = new User({
-        email,
-        password: hashedPassword,
-    });
 
-    await newUser.save();
-    res.status(201).json({ message: 'User registered successfully' });
 
+})
+
+
+
+router.get('/verify', verifyToken, (req, res) => {
+    res.json({ message: `Welcome, ${req.user.email}! This is proctected data` })
 })
 
 router.post('/authenticate', async (req, res) => {
@@ -63,12 +86,6 @@ router.post('/authenticate', async (req, res) => {
     }
 });
 
-router.get('/verify', verifyToken, (req, res) => {
-    res.json({ message: `Welcome, ${req.user.email}! This is proctected data` })
-})
-
-
-
 router.post('/forget-password', async (req, res) => {
     const { email } = req.body;
 
@@ -81,13 +98,13 @@ router.post('/forget-password', async (req, res) => {
         }
 
         // Generate a random token and store it in the database
-        const resetToken = randomToken();
-        user.resetToken = resetToken;
+        const token = randomToken();
+        user.resetToken = token;
         user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
         await user.save();
 
         // Send password reset email
-        await sendResetEmail(user, resetToken, (error, result) => {
+        await sendResetEmail(user, token, (error, result) => {
             if (error) {
                 console.error(error);
                 res.status(500).json({ message: 'Internal Server Error' });
@@ -102,10 +119,38 @@ router.post('/forget-password', async (req, res) => {
     }
 });
 
-
-
 // Reset Password 
-// Reset Password 
+
+router.post('/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    try {
+        const user = await User.findOne({
+            resetToken: token,
+            resetTokenExpiry: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "Invalid token!" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user.password = hashedPassword;
+        user.resetToken = null;
+        user.resetTokenExpiry = null;
+
+        await user.save();
+        console.log("Details:", user);
+        return res.status(200).json({ message: "Password reset successful!" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 router.post('/reset-password', async (req, res) => {
     const { email } = req.body;
 
@@ -114,7 +159,7 @@ router.post('/reset-password', async (req, res) => {
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(401).json({ message: 'Invalid or expired reset link' });
+            return res.status(404).json({ message: 'Invalid or expired reset link' });
         }
 
         const token = randomToken();
@@ -166,42 +211,6 @@ router.post('/reset-password', async (req, res) => {
 
 });
 
-
-router.post('/reset-password/:token', async (req, res) => {
-    const { token } = req.params;
-    const { password } = req.body;
-
-    try {
-        const user = await User.findOne({
-            resetToken: token,
-            resetTokenExpiry: { $gt: Date.now() }
-        });
-
-        if (!user) {
-            return res.status(404).json({ message: "Invalid token!" });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        user.password = hashedPassword;
-        user.resetToken = null;
-        user.resetTokenExpiry = null;
-
-        await user.save();
-        return res.status(200).json({ message: "Password reset successful!" });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Internal Server Error' });
-    }
-});
-
-
-router.get('/', (req, res) => {
-    console.log("Test is working");
-    return res.status(200).json({ message: "App is working" });
-
-})
 
 
 
