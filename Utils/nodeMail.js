@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer'
 
 const sendResetEmail = async (User, resetToken, callback) => {
     // const resetLink = `${process.env.CLIENT_URL}/RESET-PASSWORD/${resetToken}`
-    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetLink = `https://rad-gnome-237bf5.netlify.app/${resetToken}`;
 
     const transporter = nodemailer.createTransport({
         service: 'gmail',
