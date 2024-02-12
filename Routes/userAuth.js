@@ -211,7 +211,9 @@ router.post('/reset-password', async (req, res) => {
 
 });
 
-
+router.get('/', (req, res) => {
+    res.status(201).json({ message: "Am working" });
+})
 
 
 export const userRouter = router;
